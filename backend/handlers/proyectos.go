@@ -22,6 +22,8 @@ func failure(w http.ResponseWriter, err error) {
 	var validation *factories.ValidationError
 	if errors.As(err, &validation) {
 		send(w, 400, map[string]string{"error": validation.Error()})
+	} else if errors.Is(err, database.ErrRelation) {
+		send(w, 409, map[string]string{"error": err.Error()})
 	} else if errors.Is(err, database.ErrNotFound) {
 		send(w, 404, map[string]string{"error": err.Error()})
 	} else {

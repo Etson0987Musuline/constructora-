@@ -9,6 +9,7 @@ import (
 	"sync"
 )
 
+var ErrRelation = errors.New("el cliente no existe o tiene obras asociadas")
 var ErrNotFound = errors.New("registro no encontrado")
 
 type Repository interface {
@@ -18,21 +19,40 @@ type Repository interface {
 	Delete(string) error
 }
 type Store struct {
-	mu   sync.Mutex
-	file string
+	memoryEnabled bool
+	memory        map[string][]models.Record
+	mu            sync.Mutex
+	file          string
 }
 
+func NewMemoryStore() *Store {
+	return &Store{memoryEnabled: true, memory: map[string][]models.Record{"clientes": {}, "obras": {}}}
+}
 func NewStore(file string) *Store { return &Store{file: file} }
 func (s *Store) Repository(resource string) Repository {
-	return &JSONRepository{store: s, resource: resource}
+	repository := &JSONRepository{store: s, resource: resource}
+	if s.memoryEnabled {
+		return &MemoryRepository{JSONRepository: repository}
+	}
+	return repository
 }
 
+type MemoryRepository struct{ *JSONRepository }
 type JSONRepository struct {
 	store    *Store
 	resource string
 }
 
 func (s *Store) read() (map[string][]models.Record, error) {
+	if s.memoryEnabled {
+		raw, err := json.Marshal(s.memory)
+		if err != nil {
+			return nil, err
+		}
+		var copy map[string][]models.Record
+		err = json.Unmarshal(raw, &copy)
+		return copy, err
+	}
 	data := map[string][]models.Record{"clientes": {}, "obras": {}}
 	raw, err := os.ReadFile(s.file)
 	if errors.Is(err, os.ErrNotExist) {
@@ -50,6 +70,10 @@ func (s *Store) read() (map[string][]models.Record, error) {
 	return data, nil
 }
 func (s *Store) write(data map[string][]models.Record) error {
+	if s.memoryEnabled {
+		s.memory = data
+		return nil
+	}
 	if err := os.MkdirAll(filepath.Dir(s.file), 0755); err != nil {
 		return err
 	}
@@ -103,6 +127,18 @@ func (r *JSONRepository) Save(row models.Record, replace bool) (models.Record, e
 	if err != nil {
 		return models.Record{}, err
 	}
+	if r.resource == "obras" {
+		found := false
+		for _, client := range data["clientes"] {
+			if client.ID == row.ClientID {
+				found = true
+				break
+			}
+		}
+		if !found {
+			return models.Record{}, ErrRelation
+		}
+	}
 	if replace {
 		found := false
 		for i, old := range data[r.resource] {
@@ -132,6 +168,13 @@ func (r *JSONRepository) Delete(id string) error {
 	}
 	for i, row := range data[r.resource] {
 		if row.ID == id {
+			if r.resource == "clientes" {
+				for _, project := range data["obras"] {
+					if project.ClientID == id {
+						return ErrRelation
+					}
+				}
+			}
 			data[r.resource] = append(data[r.resource][:i], data[r.resource][i+1:]...)
 			return r.store.write(data)
 		}

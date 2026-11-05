@@ -2,7 +2,7 @@
   "info": {
     "name": "Constructora — Factory Method y Abstract Factory",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
-    "description": "Ejecuta cada carpeta en orden: crear captura el ID automáticamente. La API guarda datos en data/records.json; la interfaz usa almacenamiento del navegador independiente."
+    "description": "Crear cliente primero, después su obra. clientId se toma de cliente_id. Para eliminar un cliente se deben eliminar sus obras antes. Nuevos campos obligatorios en POST y PUT. Puerto 3000."
   },
   "variable": [
     {
@@ -35,7 +35,7 @@
             "url": "{{base_url}}/api/clientes",
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"name\": \"Juan Pérez\",\n  \"detail\": \"juan@example.com\",\n  \"kind\": \"Persona\",\n  \"status\": \"Activo\"\n}",
+              "raw": "{\n  \"name\": \"Juan Pérez\",\n  \"detail\": \"juan@example.com\",\n  \"kind\": \"Persona\",\n  \"status\": \"Activo\",\n  \"document\": \"12345678\",\n  \"phone\": \"987654321\",\n  \"address\": \"Av. Perú 123, Lima\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -107,7 +107,7 @@
             "url": "{{base_url}}/api/clientes/{{cliente_id}}",
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"name\": \"Juan Pérez actualizado\",\n  \"detail\": \"juan@example.com\",\n  \"kind\": \"Persona\",\n  \"status\": \"Inactivo\"\n}",
+              "raw": "{\n  \"name\": \"Juan Pérez actualizado\",\n  \"detail\": \"juan@example.com\",\n  \"kind\": \"Persona\",\n  \"status\": \"Inactivo\",\n  \"document\": \"12345678\",\n  \"phone\": \"987654321\",\n  \"address\": \"Av. Perú 123, Lima\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -145,25 +145,6 @@
               }
             }
           ]
-        },
-        {
-          "name": "Eliminar",
-          "request": {
-            "method": "DELETE",
-            "header": [],
-            "url": "{{base_url}}/api/clientes/{{cliente_id}}"
-          },
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test('Estado HTTP 204', () => pm.response.to.have.status(204));"
-                ]
-              }
-            }
-          ]
         }
       ]
     },
@@ -183,7 +164,7 @@
             "url": "{{base_url}}/api/obras",
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"name\": \"Edificio Los Olivos\",\n  \"detail\": \"Lima, Perú\",\n  \"kind\": \"Residencial\",\n  \"status\": \"Planificación\"\n}",
+              "raw": "{\n  \"name\": \"Edificio Los Olivos\",\n  \"detail\": \"Lima, Perú\",\n  \"kind\": \"Residencial\",\n  \"status\": \"Planificación\",\n  \"clientId\": \"{{cliente_id}}\",\n  \"responsible\": \"Ana Torres\",\n  \"startDate\": \"2026-11-05\",\n  \"endDate\": \"2027-05-30\",\n  \"budget\": 150000,\n  \"progress\": 0\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -255,7 +236,7 @@
             "url": "{{base_url}}/api/obras/{{obra_id}}",
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"name\": \"Edificio Los Olivos actualizado\",\n  \"detail\": \"Lima, Perú\",\n  \"kind\": \"Residencial\",\n  \"status\": \"En ejecución\"\n}",
+              "raw": "{\n  \"name\": \"Edificio Los Olivos actualizado\",\n  \"detail\": \"Lima, Perú\",\n  \"kind\": \"Residencial\",\n  \"status\": \"En ejecución\",\n  \"clientId\": \"{{cliente_id}}\",\n  \"responsible\": \"Ana Torres\",\n  \"startDate\": \"2026-11-05\",\n  \"endDate\": \"2027-05-30\",\n  \"budget\": 150000,\n  \"progress\": 45\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -312,6 +293,25 @@
               }
             }
           ]
+        }
+      ]
+    },
+    {
+      "name": "Eliminar cliente (después de eliminar sus obras)",
+      "request": {
+        "method": "DELETE",
+        "header": [],
+        "url": "{{base_url}}/api/clientes/{{cliente_id}}"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Eliminado', () => pm.response.to.have.status(204));"
+            ]
+          }
         }
       ]
     }

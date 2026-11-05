@@ -1,4 +1,5 @@
-export type Entry = { id: string; name: string; detail: string; kind: string; status: string };
+export type ExtraFields = { document?: string; phone?: string; address?: string; clientId?: string; responsible?: string; startDate?: string; endDate?: string; budget?: number; progress?: number };
+export type Entry = ExtraFields & { id: string; name: string; detail: string; kind: string; status: string };
 export type Draft = Omit<Entry, "id">;
 interface ClientProduct { build(data: Draft): Entry }
 class Client implements ClientProduct {
