@@ -5,7 +5,7 @@ Dos CRUD en Next.js y TypeScript:
 - **Clientes — Factory Method:** `ClientCreator` define el flujo y su método abstracto; `ConcreteClientCreator` crea el producto `Client`.
 - **Obras — Abstract Factory:** `ProjectFactory` define dos productos relacionados (obra y política). `ResidentialFactory` y `CommercialFactory` entregan familias compatibles, con sus propios estados iniciales.
 
-Ambos módulos permiten crear, listar, buscar, consultar detalles, editar y eliminar con confirmación. Los formularios validan campos obligatorios y correo electrónico. Los datos se conservan en `localStorage`: son locales a este navegador y no se comparten entre equipos. No requiere base de datos ni servidor de persistencia.
+Ambos módulos permiten crear, listar, buscar, consultar detalles, editar y eliminar con confirmación. Los formularios validan campos obligatorios y correo electrónico. La interfaz usa la API del servidor; los datos son compartidos entre dispositivos. En desarrollo usa TypeScript y en Docker/AWS usa Go.
 
 ## Ejecutar
 
@@ -47,7 +47,7 @@ Obra: `{"name":"Edificio Los Olivos","detail":"Lima","kind":"Residencial","statu
 
 Respuestas: creación 201, lectura/actualización 200, eliminación 204 sin cuerpo, validación 400, registro inexistente 404, fallo de almacenamiento 500. Los errores son JSON con campo `error`.
 
-La API persiste en `data/records.json` (excluido del control de versiones), para uso local en una sola instancia de Node.js. Es independiente del localStorage de la interfaz: los registros no se sincronizan. No incorpora autenticación.
+La API persiste en `data/records.json` (excluido del control de versiones), para uso local en una sola instancia de Node.js. La interfaz consume esta API si no se configura API_BACKEND_URL. No incorpora autenticación.
 
 Pruebas: `node --experimental-strip-types --test lib/api.test.ts lib/patterns.test.ts`.
 
@@ -72,11 +72,11 @@ Rutas HTTP → ServiceCreator (Factory Method)
 
 Los dos patrones se usan para componer ambos CRUD. Además, los constructores de dominio conservan Factory Method para clientes y las familias Abstract Factory para obras residenciales/comerciales en `lib/patterns.ts`. La actualización valida y construye la entidad mediante la misma familia, conservando su ID.
 
-Se conservan las rutas y los cuerpos de la colección Postman. La persistencia JSON sigue destinada a una instancia local del servidor; la interfaz continúa con su almacenamiento independiente.
+Se conservan las rutas y los cuerpos de la colección Postman. La persistencia JSON sigue destinada a una instancia local del servidor; la interfaz consume la API compartida.
 
 ## Backend independiente en Go
 
-La carpeta `../backend` también implementa ambos CRUD usando Factory Method y Abstract Factory. Ejecutar `go run .` allí para servir en puerto 8081. Tiene README y colección Postman propios. Cada backend conserva su almacenamiento separado.
+La carpeta `../backend` también implementa ambos CRUD usando Factory Method y Abstract Factory. Ejecutar `go run .` allí para servir en puerto 8081. Tiene README y colección Postman propios. Cada backend conserva su almacenamiento; en Docker/AWS la web está conectada a Go.
 
 
 ## Clientes vinculados a obras y datos completos
@@ -117,7 +117,7 @@ Obra: cliente, responsable, fecha inicial, fecha final y presupuesto obligatorio
 
 Los registros antiguos no se borran ni reciben datos inventados: completa sus campos al editarlos. En la página aparecen como pendientes o sin asignar. El detalle del cliente muestra sus obras y el de la obra muestra el cliente y todos sus datos. Se mantienen Factory Method y Abstract Factory.
 
-La colección Postman está actualizada: crear cliente, crear obra y eliminar obra antes de eliminar cliente. Si ya la importaste, vuelve a importar la versión nueva. Cada backend y el navegador mantienen sus almacenamientos independientes.
+La colección Postman está actualizada: crear cliente, crear obra y eliminar obra antes de eliminar cliente. Si ya la importaste, vuelve a importar la versión nueva. La interfaz usa el almacenamiento del backend seleccionado; en Docker/AWS utiliza Go.
 
 ## Ficha de obra, avance y notificaciones
 
@@ -129,7 +129,7 @@ Las APIs aceptan `progress` como entero de 0 a 100 en obras; si se omite vale 0.
 
 Factory Method crea un repositorio individual. Abstract Factory entrega los repositorios de clientes y obras del mismo entorno. Las fábricas del módulo reciben esa fábrica como dependencia; los servicios no cambian al intercambiarla. Los entornos implementados son archivo JSON (persistente, por defecto) y memoria (temporal, para pruebas). Ambos mantienen las restricciones cliente-obra. Oracle, PostgreSQL y AWS son ejemplos de las imágenes de referencia y no están implementados.
 
-Para usar memoria, define `CONSTRUCTORA_STORAGE=memory` antes de iniciar el servidor; `json` selecciona archivos. Reinicia el servidor al cambiarlo. Cambiar de entorno no migra datos y memoria se vacía al reiniciar. Cada fábrica de memoria creada explícitamente aísla sus datos; dentro de una fábrica ambos repositorios comparten contexto. La interfaz sigue guardando sus propios datos en el navegador.
+Para usar memoria, define `CONSTRUCTORA_STORAGE=memory` antes de iniciar el servidor; `json` selecciona archivos. Reinicia el servidor al cambiarlo. Cambiar de entorno no migra datos y memoria se vacía al reiniciar. Cada fábrica de memoria creada explícitamente aísla sus datos; dentro de una fábrica ambos repositorios comparten contexto. La interfaz consume la API compartida del backend seleccionado.
 
 En TypeScript, `backend/factories/repository-creator.ts` usa clase abstracta y subclases; `persistence-factory.ts` agrupa repositorios JSON o memoria. En Go, `factories/persistence_factory.go` implementa los mismos contratos mediante interfaces y composición. Go no tiene herencia de clases; TypeScript demuestra literalmente ese criterio de las imágenes.
 

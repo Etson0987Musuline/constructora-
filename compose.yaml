@@ -1,0 +1,44 @@
+name: constructora
+services:
+  api:
+    build: ./backend
+    restart: unless-stopped
+    environment:
+      PORT: "8081"
+      CONSTRUCTORA_STORAGE: json
+      CONSTRUCTORA_DATA_FILE: /data/records.json
+    volumes:
+      - records:/data
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1:8081/api/salud"]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+  web:
+    build:
+      context: ./sistema-constructora
+      args:
+        API_BACKEND_URL: http://api:8081
+    restart: unless-stopped
+    depends_on:
+      api:
+        condition: service_healthy
+    ports:
+      - "${HTTP_BIND_ADDRESS:-127.0.0.1}:${HTTP_PORT:-8080}:3000"
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3000/api/salud').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 20s
+      timeout: 10s
+      retries: 10
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+volumes:
+  records:

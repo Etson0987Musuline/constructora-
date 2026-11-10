@@ -66,7 +66,7 @@ go vet ./...
 
 Las pruebas cubren ambos CRUD, validación, persistencia al reconstruir el router, conservación del ID, búsqueda y creaciones simultáneas.
 
-El backend Next.js sigue disponible en `../sistema-constructora/backend` con los dos patrones y API en puerto 3000. Ambos servidores tienen archivos de datos independientes y la interfaz mantiene localStorage. No hay sincronización entre ellos. Este backend está preparado para uso local en una instancia; no incluye autenticación.
+El backend Next.js sigue disponible en `../sistema-constructora/backend` con los dos patrones y API en puerto 3000. Cada backend tiene su archivo de datos; la interfaz usa el backend seleccionado por API_BACKEND_URL (Go en Docker/AWS). Este backend está preparado para uso local en una instancia; no incluye autenticación.
 
 
 ## Clientes vinculados a obras y datos completos
@@ -107,7 +107,7 @@ Obra: cliente, responsable, fecha inicial, fecha final y presupuesto obligatorio
 
 Los registros antiguos no se borran ni reciben datos inventados: completa sus campos al editarlos. En la página aparecen como pendientes o sin asignar. El detalle del cliente muestra sus obras y el de la obra muestra el cliente y todos sus datos. Se mantienen Factory Method y Abstract Factory.
 
-La colección Postman está actualizada: crear cliente, crear obra y eliminar obra antes de eliminar cliente. Si ya la importaste, vuelve a importar la versión nueva. Cada backend y el navegador mantienen sus almacenamientos independientes.
+La colección Postman está actualizada: crear cliente, crear obra y eliminar obra antes de eliminar cliente. Si ya la importaste, vuelve a importar la versión nueva. La interfaz usa el almacenamiento del backend seleccionado; en Docker/AWS utiliza Go.
 
 ## Ficha de obra, avance y notificaciones
 
@@ -119,7 +119,7 @@ Las APIs aceptan `progress` como entero de 0 a 100 en obras; si se omite vale 0.
 
 Factory Method crea un repositorio individual. Abstract Factory entrega los repositorios de clientes y obras del mismo entorno. Las fábricas del módulo reciben esa fábrica como dependencia; los servicios no cambian al intercambiarla. Los entornos implementados son archivo JSON (persistente, por defecto) y memoria (temporal, para pruebas). Ambos mantienen las restricciones cliente-obra. Oracle, PostgreSQL y AWS son ejemplos de las imágenes de referencia y no están implementados.
 
-Para usar memoria, define `CONSTRUCTORA_STORAGE=memory` antes de iniciar el servidor; `json` selecciona archivos. Reinicia el servidor al cambiarlo. Cambiar de entorno no migra datos y memoria se vacía al reiniciar. Cada fábrica de memoria creada explícitamente aísla sus datos; dentro de una fábrica ambos repositorios comparten contexto. La interfaz sigue guardando sus propios datos en el navegador.
+Para usar memoria, define `CONSTRUCTORA_STORAGE=memory` antes de iniciar el servidor; `json` selecciona archivos. Reinicia el servidor al cambiarlo. Cambiar de entorno no migra datos y memoria se vacía al reiniciar. Cada fábrica de memoria creada explícitamente aísla sus datos; dentro de una fábrica ambos repositorios comparten contexto. La interfaz consume la API compartida del backend seleccionado.
 
 En TypeScript, `backend/factories/repository-creator.ts` usa clase abstracta y subclases; `persistence-factory.ts` agrupa repositorios JSON o memoria. En Go, `factories/persistence_factory.go` implementa los mismos contratos mediante interfaces y composición. Go no tiene herencia de clases; TypeScript demuestra literalmente ese criterio de las imágenes.
 
